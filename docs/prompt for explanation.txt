@@ -1,0 +1,438 @@
+here is a template for automatically creating documentations:
+
+here is the file structure:
+
+docs/
+├── Makefile
+├── source/
+│   ├── _static/
+│   │   └── css/
+│   │       └── custom.css
+│   ├── _templates/
+│   │   ├── autosummary/
+│   │   │   └── class.rst
+│   │   ├── breadcrumbs.html
+│   │   ├── footer.html
+│   │   └── layout.html
+│   ├── target_code/
+│   │   └── a_folder_that_contains_the_entire_package
+│   ├── examples/
+│   │   ├── example.py
+│   │   └── GALLERY_HEADER.rst
+│   ├── conf.py
+│   ├── index.rst
+│   └── api.rst
+
+here is the content in Makefile:
+
+# Minimal Makefile for Sphinx documentation
+#
+# This Makefile automates common tasks for Sphinx documentation, such as building
+# various output formats, testing documentation examples, and cleaning up artifacts.
+
+# You can set these variables from the command line or override them when calling make.
+SPHINXOPTS    = -W --keep-going
+# Options passed to sphinx-build (-W treats warnings as errors, --keep-going continues on errors)
+SPHINXBUILD   = sphinx-build
+# Command to invoke the Sphinx build process
+SPHINXPROJ    = package_name
+# Name of the Sphinx project
+SOURCEDIR     = source
+# Directory containing the source documentation files
+BUILDDIR      = build
+# Directory where the built files will be output
+
+# Default target: "make" without arguments will execute this target.
+help:
+	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+# Displays a list of available Sphinx build commands and options.
+
+.PHONY: help Makefile clean
+
+%: Makefile
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+# Catch-all target: Redirects any unknown make targets to Sphinx's "-M" mode.
+# The "$@" variable substitutes the name of the invoked target.
+
+doctest:
+	sphinx-apidoc -o source/target_code target_code --force --separate --module-first
+	sphinx-autogen source/**/*.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+
+clean:
+	# Remove build directory
+	rm -rf $(BUILDDIR)/*
+	
+	# Remove auto-generated directories
+	rm -rf $(SOURCEDIR)/_examples_gallery
+	rm -rf $(SOURCEDIR)/_api_gallery
+	rm -rf $(SOURCEDIR)/generated
+	rm -rf $(SOURCEDIR)/_autosummary
+	
+	# Remove Sphinx gallery cache
+	rm -rf $(SOURCEDIR)/_examples_python
+	rm -rf $(SOURCEDIR)/_examples_jupyter
+	
+	# Remove execution times and other generated files
+	rm -f $(SOURCEDIR)/sg_execution_times.rst
+	rm -f $(SOURCEDIR)/_examples_gallery/sg_execution_times.rst
+	rm -f $(SOURCEDIR)/_api_gallery/sg_execution_times.rst
+	
+	# Remove any temporary or cache files
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type f -name "*.pyc" -delete
+	find . -type f -name ".DS_Store" -delete
+	find . -type d -name ".ipynb_checkpoints" -exec rm -rf {} +
+
+here is the content in conf.py:
+
+# -*- coding: utf-8 -*-
+#
+# Configuration file for the Sphinx documentation builder.
+#
+# For a complete list of options, see:
+# http://www.sphinx-doc.org/en/master/config
+
+# -- Settings -------------------------------------------------
+
+package_name = "package_name"
+copyright = "copyright_info"
+author = "authors"
+
+github_username = "useranme"
+
+version = "0.1.0"
+release = "0.1.0"
+
+# -- Path setup --------------------------------------------------------------
+
+import os
+import sys
+
+# Add the path to your package's source code
+def add_target_code_paths(target_dir):
+    for root, dirs, files in os.walk(target_dir):
+        sys.path.insert(0, os.path.abspath(root))
+
+# Include paths for the package dynamically
+add_target_code_paths(f'./target_code/{package_name}')
+
+import warnings
+from sklearn.exceptions import ConvergenceWarning
+
+# -- General configuration ---------------------------------------------------
+
+project = package_name
+
+# Define the root document
+root_doc = "index"
+
+# Add any Sphinx extension module names here
+extensions = [
+    "sphinx.ext.autodoc",        # Generate API documentation from docstrings
+    "sphinx.ext.autosummary",    # Generate summary tables for API docs
+    "sphinx.ext.doctest",        # Test code snippets in documentation
+    "sphinx.ext.imgconverter",   # Convert images to appropriate formats
+    "sphinx.ext.intersphinx",    # Link to other projects' documentation
+    "sphinx.ext.mathjax",        # Render math via MathJax
+    "sphinx.ext.napoleon",       # Support for NumPy and Google style docstrings
+    "sphinx.ext.viewcode",       # Add links to highlighted source code
+    "sphinx.ext.githubpages",    # Create .nojekyll file for GitHub Pages
+    "sphinx_copybutton",         # Add copy buttons to code blocks
+    "sphinx_gallery.gen_gallery",# Generate gallery from Python scripts
+]
+
+# List of patterns, relative to source directory, that match files and
+# directories to ignore when looking for source files.
+templates_path = ["_templates"]
+source_suffix = ".rst"  # The suffix of source files
+
+# Files to ignore when building documentation
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "examples/GALLERY_HEADER.rst",
+    f"target_code/{package_name}/GALLERY_HEADER.rst",
+]
+
+# Syntax highlighting style
+pygments_style = "sphinx"
+
+# -- Options for HTML output -------------------------------------------------
+
+# The theme to use for HTML and HTML Help pages
+html_theme = "sphinx_rtd_theme"
+
+# Theme options
+html_theme_options = {
+    "logo_only": True,
+    "navigation_with_keys": True,
+    "style_nav_header_background": "#2980B9",
+    "style_external_links": True,
+}
+
+# The paths that contain custom static files
+html_static_path = ["_static"]
+html_css_files = ["css/custom.css"]
+
+# These paths are either relative to html_static_path or fully qualified paths
+html_favicon = None
+html_logo = None
+
+# -- Options for LaTeX output ------------------------------------------------
+
+latex_documents = [
+    (root_doc, f"{package_name}.tex", f"{package_name} Documentation",
+     "Your Name or Organization", "manual"),
+]
+
+# -- Options for manual page output ------------------------------------------
+
+man_pages = [
+    (root_doc, package_name, f"{package_name} Documentation",
+     [author], 1)
+]
+
+# -- Options for Texinfo output ----------------------------------------------
+
+texinfo_documents = [
+    (root_doc, package_name, f"{package_name} Documentation",
+     author, package_name, "A tool for automated research workflows.",
+     "Miscellaneous"),
+]
+
+# -- Extension configuration -------------------------------------------------
+
+# Intersphinx configuration
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy", None),
+    "sklearn": ("https://scikit-learn.org/stable", None),
+    "matplotlib": ("https://matplotlib.org/stable", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
+}
+
+# Autodoc configuration
+autosummary_generate = True
+autodoc_typehints = "description"
+autodoc_member_order = 'bysource'
+add_module_names = False
+autodoc_default_options = {
+    "members": True,
+    "inherited-members": True,
+    "show-inheritance": True,
+    "special-members": "__init__",
+    "undoc-members": True,
+}
+
+# Napoleon settings for docstring parsing
+napoleon_google_docstring = True
+napoleon_numpy_docstring = True
+napoleon_include_init_with_doc = True
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = True
+napoleon_use_admonition_for_examples = True
+napoleon_use_admonition_for_notes = True
+napoleon_use_admonition_for_references = True
+napoleon_use_ivar = False
+napoleon_use_param = True
+napoleon_use_rtype = True
+
+# Copy button configuration
+copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
+copybutton_prompt_is_regexp = True
+
+# Sphinx Gallery configuration
+sphinx_gallery_conf = {
+    "doc_module": package_name,
+    "examples_dirs": ["examples"],          # Example scripts directory
+    "gallery_dirs": ["_examples_gallery"],  # Output directory
+    "filename_pattern": r".*\.py",
+    "ignore_pattern": r"(^__|GALLERY_HEADER)",
+    "compress_images": ("images", "thumbnails"),
+    "thumbnail_size": (400, 280),
+    "within_subsection_order": "FileNameSortKey",
+    "show_memory": True,
+    "capture_repr": ("_repr_html_", "__repr__"),
+    "backreferences_dir": None,
+    "download_all_examples": True,
+    "remove_config_comments": True,
+    "show_signature": True,
+}
+
+# -- Additional settings -----------------------------------------------------
+
+# Default role for text marked up with single backticks
+default_role = 'any'
+
+# Warnings to ignore
+warnings.filterwarnings("ignore", category=ConvergenceWarning, module="sklearn")
+
+# Number figures, tables and code-blocks
+numfig = True
+numfig_format = {
+    'figure': 'Figure %s',
+    'table': 'Table %s',
+    'code-block': 'Listing %s',
+    'section': 'Section %s',
+}
+
+# If true, show URL addresses after external links
+latex_show_urls = 'footnote'
+
+# Don't show type hints in signature (they're in the description)
+autodoc_typehints_format = "fully-qualified"
+
+# Create a list of external links that can be used throughout the documentation
+extlinks = {
+    'issue': (f'https://github.com/{github_username}/{package_name}/issues/%s', '#%s'),
+    'pull': (f'https://github.com/{github_username}/{package_name}/pull/%s', 'PR #%s'),
+}
+
+
+here is the content in index.rst:
+
+|projectlogo|
+
+Project Name: A General Framework
+==================================
+
+*Project Name* is a framework designed to simplify and accelerate your work in [insert field or purpose]. It offers a [describe key characteristic, e.g., modular API, flexible architecture, etc.] to help users achieve their goals efficiently.
+
+Key Features
+------------
+
+- :doc:`Lightweight and versatile <tutorial/01_key_features>`  
+  - Handle a wide variety of tasks with a simple installation process.
+
+- :doc:`User-friendly configuration <tutorial/02_configuration>`  
+  - Define project settings using familiar syntax and tools.
+
+- :doc:`Efficient algorithms <tutorial/03_optimization_algorithms>`  
+  - Leverage state-of-the-art algorithms for better performance.
+
+- :doc:`Scalable parallelization <tutorial/04_parallelization>`  
+  - Easily scale workflows with support for distributed systems.
+
+- :doc:`Interactive visualization <tutorial/05_visualization>`  
+  - Gain insights from data with a variety of plotting tools.
+
+Basic Concepts
+--------------
+
+Here are some basic terms used in *Project Name*:
+
+- **Workflow**: [Define core workflow]
+- **Task**: [Define core task]
+
+Below is a sample code to demonstrate how *Project Name* can be used:
+
+.. code-block:: python
+
+    import ...
+
+    def example_function():
+        # Define logic here
+        pass
+
+    result = example_function()
+
+    print("Result:", result)
+
+Visualization Dashboard
+-----------------------
+
+*Project Name Dashboard* offers a real-time dashboard for monitoring and managing your workflows. You can visualize [key metrics or outputs] and interact with your data.
+
+.. image:: https://via.placeholder.com/800x400.png
+  :alt: Dashboard Example
+
+Install the dashboard via pip:
+
+.. code-block:: console
+
+   $ pip install project-dashboard
+
+.. TIP::
+
+   Please check out the `Getting Started <https://example.com/getting-started>`__ section of the documentation.
+
+Communication
+-------------
+
+- **GitHub Discussions**: For general questions and community support.
+- **GitHub Issues**: For bug reports and feature requests.
+
+Contribution
+------------
+
+We welcome contributions! Please see the `Contribution Guide <https://example.com/contributing>`__ for details.
+
+License
+-------
+
+[Insert License Name] License. See `LICENSE <https://example.com/license>`__ for details.
+
+Reference
+---------
+
+[Insert reference or citation information here, if applicable.]
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   installation
+   tutorial/index
+   api
+   reference/index
+   _examples_gallery/index
+   _api_gallery/index
+   faq
+   
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
+.. |projectlogo| image:: https://via.placeholder.com/800x200.png
+  :width: 800
+  :alt: Project Logo
+  
+  
+here is the content inside api.rst:
+
+API Reference
+=============
+
+Click `package_name` to see the comprehensive API reference for the package, including all its modules and submodule.
+
+.. autosummary::
+   :toctree: _autosummary
+   :template: custom-module-template.rst
+   :recursive:
+
+here is the content inside examples/GALLERY_HEADER.rst:
+
+Project Visualization Examples
+==============================
+
+This module provides utility functions for creating visualizations to analyze and understand the features of the project. These visualizations use various plotting libraries, such as Plotly and Matplotlib, and typically require a data object and optional parameters.
+
+.. note::
+    Some functions in this module may use interactive plotting libraries like Plotly. If you're using `JupyterLab`_,
+    additional setup might be required to render these visualizations. Please follow the `installation guide`_ for enabling support in JupyterLab.
+
+.. note::
+    Specific visualizations may require additional Python packages to be installed, such as `scikit-learn <https://github.com/scikit-learn/scikit-learn>`__. Ensure you have all necessary dependencies for the visualizations you wish to generate.
+
+    .. _JupyterLab: https://github.com/jupyterlab/jupyterlab
+    .. _installation guide: https://github.com/plotly/plotly.py#jupyterlab-support
+	
+
+Here is the question for you:
