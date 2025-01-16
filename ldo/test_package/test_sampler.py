@@ -8,7 +8,7 @@ from optuna.samplers import RandomSampler
 from optuna.samplers._lazy_random_state import LazyRandomState
 import optunahub
 
-from ldo.analyze.search_space import continuity_and_smoothness, size
+from ldo.analyze.search_space_basic import continuity_and_smoothness, size
 
 
 class test_sampler(optunahub.samplers.SimpleBaseSampler):
